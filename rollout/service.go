@@ -241,7 +241,7 @@ func (c *rolloutContext) reconcileStableAndCanaryService() error {
 		return err
 	}
 
-	if replicasetutil.IsReplicaSetReady(c.newRS) {
+	if c.rollout.Status.PromoteFull || replicasetutil.IsReplicaSetReady(c.newRS) {
 		err = c.ensureSVCTargets(c.rollout.Spec.Strategy.Canary.CanaryService, c.newRS)
 		if err != nil {
 			return err

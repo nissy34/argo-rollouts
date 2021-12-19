@@ -131,24 +131,35 @@ func (c *rolloutContext) reconcileTrafficRouting() error {
 			weightDestinations = append(weightDestinations, c.calculateWeightDestinationsFromExperiment()...)
 		} else if index != nil {
 			atDesiredReplicaCount := replicasetutil.AtDesiredReplicaCountsForCanary(c.rollout, c.newRS, c.stableRS, c.otherRSs, nil)
-			if !atDesiredReplicaCount && !c.rollout.Status.PromoteFull {
-				// Use the previous weight since the new RS is not ready for a new weight
-				for i := *index - 1; i >= 0; i-- {
-					step := c.rollout.Spec.Strategy.Canary.Steps[i]
-					if step.SetWeight != nil {
-						desiredWeight = *step.SetWeight
-						break
+			if !atDesiredReplicaCount {
+				if c.rollout.Status.PromoteFull || *index == int32(len(c.rollout.Spec.Strategy.Canary.Steps)) {
+					// We are in promote to stable mode
+
+					if c.rollout.Status.Canary.Weights != nil {
+						desiredWeight = c.rollout.Status.Canary.Weights.Canary.Weight
+					}
+
+					if c.rollout.Spec.Strategy.Canary.DynamicStableScale {
+						// We will increase the weight according to the available replica count
+						desiredWeight = maxValue(desiredWeight, (100*c.newRS.Status.AvailableReplicas) / *c.rollout.Spec.Replicas)
+					}
+
+				} else {
+					// Use the previous weight since the new RS is not ready for a new weight
+					for i := *index - 1; i >= 0; i-- {
+						step := c.rollout.Spec.Strategy.Canary.Steps[i]
+						if step.SetWeight != nil {
+							desiredWeight = *step.SetWeight
+							break
+						}
 					}
 				}
-				weightDestinations = append(weightDestinations, c.calculateWeightDestinationsFromExperiment()...)
-			} else if *index != int32(len(c.rollout.Spec.Strategy.Canary.Steps)) {
+			} else {
 				// If the rollout is progressing through the steps, the desired
 				// weight of the traffic routing service should be at the value of the
 				// last setWeight step, which is set by GetCurrentSetWeight.
 				desiredWeight = replicasetutil.GetCurrentSetWeight(c.rollout)
 				weightDestinations = append(weightDestinations, c.calculateWeightDestinationsFromExperiment()...)
-			} else {
-				desiredWeight = 100
 			}
 		}
 
@@ -246,4 +257,11 @@ func (c *rolloutContext) calculateWeightDestinationsFromExperiment() []v1alpha1.
 		}
 	}
 	return weightDestinations
+}
+
+func maxValue(countA int32, countB int32) int32 {
+	if countA < countB {
+		return countB
+	}
+	return countA
 }
