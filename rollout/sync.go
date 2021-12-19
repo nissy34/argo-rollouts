@@ -870,6 +870,9 @@ func (c *rolloutContext) shouldFullPromote(newStatus v1alpha1.RolloutStatus) str
 		if c.newRS == nil || c.newRS.Status.AvailableReplicas != defaults.GetReplicasOrDefault(c.rollout.Spec.Replicas) {
 			return ""
 		}
+		if c.rollout.Spec.Strategy.Canary.TrafficRouting != nil && c.rollout.Status.Canary.Weights != nil && c.rollout.Status.Canary.Weights.Canary.Weight < 100 {
+			return ""
+		}
 		if c.rollout.Status.PromoteFull {
 			return "Full promotion requested"
 		}
