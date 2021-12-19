@@ -131,16 +131,30 @@ func (c *rolloutContext) reconcileTrafficRouting() error {
 			weightDestinations = append(weightDestinations, c.calculateWeightDestinationsFromExperiment()...)
 		} else if index != nil {
 			atDesiredReplicaCount := replicasetutil.AtDesiredReplicaCountsForCanary(c.rollout, c.newRS, c.stableRS, c.otherRSs, nil)
-			if !atDesiredReplicaCount && !c.rollout.Status.PromoteFull {
-				// Use the previous weight since the new RS is not ready for a new weight
-				for i := *index - 1; i >= 0; i-- {
-					step := c.rollout.Spec.Strategy.Canary.Steps[i]
-					if step.SetWeight != nil {
-						desiredWeight = *step.SetWeight
-						break
+			if !atDesiredReplicaCount {
+				if c.rollout.Status.PromoteFull || *index == int32(len(c.rollout.Spec.Strategy.Canary.Steps)) {
+					// We are in promote to stable mode
+
+					if c.rollout.Status.Canary.Weights != nil {
+						desiredWeight = c.rollout.Status.Canary.Weights.Canary.Weight
+					}
+
+					if c.rollout.Spec.Strategy.Canary.DynamicStableScale {
+						// We will increase the weight according to the available replica count
+						desiredWeight = maxInt(desiredWeight, (100*c.newRS.Status.AvailableReplicas) / *c.rollout.Spec.Replicas)
+					}
+
+				} else {
+					// Use the previous weight since the new RS is not ready for a new weight
+					for i := *index - 1; i >= 0; i-- {
+						step := c.rollout.Spec.Strategy.Canary.Steps[i]
+						if step.SetWeight != nil {
+							desiredWeight = *step.SetWeight
+							break
+						}
 					}
 				}
-			} else if *index != int32(len(c.rollout.Spec.Strategy.Canary.Steps)) {
+			} else {
 				// This if statement prevents the desiredWeight from being set to 100
 				// when the rollout has progressed through all the steps. The rollout
 				// should send all traffic to the stable service by using a weight of
