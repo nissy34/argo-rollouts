@@ -397,6 +397,9 @@ spec:
                         - pingService
                         - pongService
                         type: object
+                      minPodsPerRS:
+                        format: int32
+                        type: integer
                       scaleDownDelayRevisionLimit:
                         format: int32
                         type: integer
