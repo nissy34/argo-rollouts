@@ -43,6 +43,18 @@ func AtDesiredReplicaCountsForCanary(ro *v1alpha1.Rollout, newRS, stableRS *apps
 	return true
 }
 
+// CheckMinPodsPerRS ensures that if the desired number of pods in a stable or canary ReplicaSet is not zero,
+// then it is at least MinPodsPerRS for High Availability. Only applicable if using TrafficRouting
+func CheckMinPodsPerRS(rollout *v1alpha1.Rollout, count int32) int32 {
+	if count == 0 {
+		return count
+	}
+	if rollout.Spec.Strategy.Canary == nil || rollout.Spec.Strategy.Canary.MinPodsPerRS == nil || rollout.Spec.Strategy.Canary.TrafficRouting == nil || *rollout.Spec.Replicas < *rollout.Spec.Strategy.Canary.MinPodsPerRS {
+		return count
+	}
+	return max(count, *rollout.Spec.Strategy.Canary.MinPodsPerRS)
+}
+
 /*
 // AtDesiredReplicaCountsForCanary indicates if the rollout is at the desired state for the current step
 func AtDesiredReplicaCountsForCanary(rollout *v1alpha1.Rollout, newRS, stableRS *appsv1.ReplicaSet, olderRSs []*appsv1.ReplicaSet) bool {
@@ -298,7 +310,7 @@ func CalculateReplicaCountsForTrafficRoutedCanary(rollout *v1alpha1.Rollout, wei
 		// a canary count was explicitly set
 		canaryCount = *setCanaryScaleReplicas
 	} else {
-		canaryCount = trafficWeightToReplicas(rolloutSpecReplica, desiredWeight)
+		canaryCount = CheckMinPodsPerRS(rollout, trafficWeightToReplicas(rolloutSpecReplica, desiredWeight))
 	}
 
 	if !rollout.Spec.Strategy.Canary.DynamicStableScale {
@@ -329,7 +341,7 @@ func CalculateReplicaCountsForTrafficRoutedCanary(rollout *v1alpha1.Rollout, wei
 			canaryCount = max(trafficWeightReplicaCount, canaryCount)
 		}
 	}
-	return canaryCount, stableCount
+	return CheckMinPodsPerRS(rollout, canaryCount), CheckMinPodsPerRS(rollout, stableCount)
 }
 
 // trafficWeightToReplicas returns the appropriate replicas given the full spec.replicas and a weight

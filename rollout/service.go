@@ -259,6 +259,12 @@ func (c *rolloutContext) ensureSVCTargets(svcName string, rs *appsv1.ReplicaSet)
 		return err
 	}
 	if svc.Spec.Selector[v1alpha1.DefaultRolloutUniqueLabelKey] != rs.Labels[v1alpha1.DefaultRolloutUniqueLabelKey] {
+		if _, ok := svc.Spec.Selector[v1alpha1.DefaultRolloutUniqueLabelKey]; !ok {
+			if !replicasetutil.IsReplicaSetReady(rs) {
+				return nil
+			}
+		}
+
 		err = c.switchServiceSelector(svc, rs.Labels[v1alpha1.DefaultRolloutUniqueLabelKey], c.rollout)
 		if err != nil {
 			return err
