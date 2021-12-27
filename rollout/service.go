@@ -260,6 +260,8 @@ func (c *rolloutContext) ensureSVCTargets(svcName string, rs *appsv1.ReplicaSet)
 	}
 	if svc.Spec.Selector[v1alpha1.DefaultRolloutUniqueLabelKey] != rs.Labels[v1alpha1.DefaultRolloutUniqueLabelKey] {
 		if _, ok := svc.Spec.Selector[v1alpha1.DefaultRolloutUniqueLabelKey]; !ok {
+			// we are in the transition from deployment to rollout
+			// we dont want to point the service to the RS until its vailable
 			if !replicasetutil.IsReplicaSetReady(rs) {
 				return nil
 			}
