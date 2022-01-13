@@ -49,7 +49,7 @@ func CheckMinPodsPerRS(rollout *v1alpha1.Rollout, count int32) int32 {
 	if count == 0 {
 		return count
 	}
-	if rollout.Spec.Strategy.Canary == nil || rollout.Spec.Strategy.Canary.MinPodsPerRS == nil || rollout.Spec.Strategy.Canary.TrafficRouting == nil || *rollout.Spec.Replicas < *rollout.Spec.Strategy.Canary.MinPodsPerRS {
+	if rollout.Spec.Strategy.Canary == nil || rollout.Spec.Strategy.Canary.MinPodsPerRS == nil || rollout.Spec.Strategy.Canary.TrafficRouting == nil {
 		return count
 	}
 	return max(count, *rollout.Spec.Strategy.Canary.MinPodsPerRS)
