@@ -829,6 +829,11 @@
         "dynamicStableScale": {
           "type": "boolean",
           "description": "DynamicStableScale is a traffic routing feature which dynamically scales the stable\nReplicaSet to minimize total pods which are running during an update. This is calculated by\nscaling down the stable as traffic is increased to canary. When disabled (the default behavior)\nthe stable ReplicaSet remains fully scaled to support instantaneous aborts."
+        },
+        "minPodsPerRS": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Assuming the desired number of pods in a stable or canary ReplicaSet is not zero, then make sure it is at least\nMinPodsPerRS for High Availability. Only applicable for TrafficRoutedCanary\n+optional"
         }
       },
       "title": "CanaryStrategy defines parameters for a Replica Based Canary"
