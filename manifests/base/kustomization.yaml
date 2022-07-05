@@ -9,4 +9,5 @@ resources:
 - argo-rollouts-notification-secret.yaml
 images:
 - name: quay.io/argoproj/argo-rollouts
-  newTag: latest
+  newName: pvss-docker.dockerhub.synamedia.com/dai/argo-rollouts
+  newTag: v1.2.1-synamedia
