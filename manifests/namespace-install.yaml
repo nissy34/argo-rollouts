@@ -11388,6 +11388,9 @@ spec:
                         - type: integer
                         - type: string
                         x-kubernetes-int-or-string: true
+                      minPodsPerRS:
+                        format: int32
+                        type: integer
                       pingPong:
                         properties:
                           pingService:
@@ -11398,9 +11401,6 @@ spec:
                         - pingService
                         - pongService
                         type: object
-                      minPodsPerRS:
-                        format: int32
-                        type: integer
                       scaleDownDelayRevisionLimit:
                         format: int32
                         type: integer
